@@ -248,8 +248,8 @@ Book last-minute trip to Miami tomorrow
 **Expected Response:**
 
 * ❌ Policy Agent flags:
-    * Miami not in approved destinations
-    * Less than 14-day advance booking requirement
+  * Miami not in approved destinations
+  * Less than 14-day advance booking requirement
 * 💡 Suggests alternative approved destinations
 * 🔒 Workflow stops without booking
 

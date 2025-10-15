@@ -257,7 +257,7 @@ app.MapGet("/agent/chat/stream", async (HttpContext ctx, string prompt, IChatCli
                 agentOutput = $"[error] {exAgent.Message}. Using heuristic: {simulatedOutputs[agentInstance.Name]}";
             }
             var endedAt = DateTime.UtcNow;
-            if (debug) await Send(new { agent = agentInstance.Name, status = "working", message = $"[debug] finished at {endedAt:O} elapsed={(endedAt-startedAt).TotalSeconds:F1}s" });
+            if (debug) await Send(new { agent = agentInstance.Name, status = "working", message = $"[debug] finished at {endedAt:O} elapsed={(endedAt - startedAt).TotalSeconds:F1}s" });
             aggregated.AppendLine($"[{agentInstance.Name}] {agentOutput}\n");
 
             // Stream the agent's result (still with status working so UI updates continuously)
