@@ -62,9 +62,9 @@
         }
     </div>
     <form @onsubmit="SendMessage" autocomplete="off" class="chat-form">
-        <input type="text" @bind="inputText" placeholder="Describe your travel needs (destination, dates, purpose)..." required />
-        <button type="submit" disabled="@isLoading">
-            @(isLoading ? "🔄 Processing..." : "✈️ Book Travel")
+        <input type="text" @bind="inputText" placeholder="Describe your travel needs (destination, dates, purpose)..." required disabled="@(isLoading || awaitingApproval || decisionSubmitting)" />
+        <button type="submit" disabled="@(isLoading || awaitingApproval || decisionSubmitting)">
+            @(isLoading ? "🔄 Processing..." : awaitingApproval ? "⏸ Awaiting Approval" : decisionSubmitting ? "⏳ Submitting" : "✈️ Book Travel")
         </button>
     </form>
 </div>
@@ -228,7 +228,7 @@
 
     private async Task SendMessage()
     {
-        if (string.IsNullOrWhiteSpace(inputText) || isLoading)
+        if (string.IsNullOrWhiteSpace(inputText) || isLoading || awaitingApproval || decisionSubmitting)
             return;
 
         var userMsg = inputText.Trim();
@@ -295,31 +295,47 @@
                 else if (update.Status == "complete" && update.Response != null)
                 {
                     // Remove the status message
-                    messages.RemoveAt(statusMessageIndex);
+                    if (statusMessageIndex < messages.Count)
+                        messages.RemoveAt(statusMessageIndex);
 
-                    // Add the final response
+                    string? finalPayload = null;
                     if (update.Response.Messages != null)
                     {
-                        var textContent = "";
                         foreach (var msg in update.Response.Messages)
                         {
                             foreach (var content in msg.Contents ?? new List<MessageContent>())
                             {
-                                if (content.Type == "text")
+                                if (content.Type == "text" && !string.IsNullOrWhiteSpace(content.Text))
                                 {
-                                    textContent = content.Text ?? "";
+                                    finalPayload = content.Text;
                                 }
                             }
                         }
-
-                        if (!string.IsNullOrWhiteSpace(textContent))
-                        {
-                            messages.Add(new ChatMessage { Content = RenderMarkdown(textContent), Sender = "bot" });
-                        }
                     }
-                    else if (!string.IsNullOrEmpty(update.Response.Result))
+                    else if (!string.IsNullOrWhiteSpace(update.Response.Result))
                     {
-                        messages.Add(new ChatMessage { Content = RenderMarkdown(update.Response.Result), Sender = "bot" });
+                        finalPayload = update.Response.Result;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(finalPayload))
+                    {
+                        if (finalPayload.Contains("Step 1 - ") && finalPayload.Contains("Step 2 - "))
+                        {
+                            var lastIdx = finalPayload.LastIndexOf("Step ");
+                            if (lastIdx >= 0)
+                            {
+                                var lastSegment = finalPayload.Substring(lastIdx).Trim();
+                                bool alreadyShown = messages.Any(m => m.Content.Contains(lastSegment.Length > 30 ? lastSegment.Substring(0,30) : lastSegment));
+                                if (!alreadyShown)
+                                {
+                                    messages.Add(new ChatMessage { Content = RenderMarkdown($"**Final Summary:**\n\n{lastSegment}"), Sender = "bot" });
+                                }
+                            }
+                        }
+                        else
+                        {
+                            messages.Add(new ChatMessage { Content = RenderMarkdown(finalPayload), Sender = "bot" });
+                        }
                     }
                     await InvokeAsync(StateHasChanged);
                 }
