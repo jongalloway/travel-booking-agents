@@ -212,6 +212,7 @@
 @code {
     private string inputText = "";
     private List<ChatMessage> messages = new();
+    private HashSet<string> startedAgents = new();
     private bool isLoading = false;
     private bool awaitingApproval = false;
     private string? pendingWorkflowId;
@@ -253,6 +254,11 @@
                         Content = $"<div class='loading-indicator'><div class='spinner-border spinner-border-sm text-primary me-2' role='status'><span class='visually-hidden'>Loading...</span></div><span class='text-muted'><strong>{update.Agent}</strong>: {rendered}</span></div>", 
                         Sender = "bot" 
                     };
+                    // Append a separate log entry the first time we see this agent start working
+                    if (startedAgents.Add(update.Agent))
+                    {
+                        messages.Add(new ChatMessage { Content = RenderMarkdown($"**{update.Agent} starting:** {purpose}"), Sender = "bot" });
+                    }
                     await InvokeAsync(StateHasChanged);
                 }
                 else if (update.Status == "awaiting_input")

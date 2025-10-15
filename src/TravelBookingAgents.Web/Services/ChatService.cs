@@ -12,10 +12,11 @@ public class ChatService(IHttpClientFactory httpClientFactory)
         return response ?? new AgentResponse();
     }
 
-    public async IAsyncEnumerable<AgentStatusUpdate> SendMessageStreamAsync(string prompt)
+    public async IAsyncEnumerable<AgentStatusUpdate> SendMessageStreamAsync(string prompt, string mode = "sequential", bool approval = false)
     {
         var client = httpClientFactory.CreateClient("api");
-        using var response = await client.GetAsync($"/agent/chat/stream?prompt={Uri.EscapeDataString(prompt)}", HttpCompletionOption.ResponseHeadersRead);
+        var url = $"/agent/chat/stream?mode={Uri.EscapeDataString(mode)}&approval={approval.ToString().ToLowerInvariant()}&prompt={Uri.EscapeDataString(prompt)}";
+        using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
         response.EnsureSuccessStatusCode();
 
         using var stream = await response.Content.ReadAsStreamAsync();
