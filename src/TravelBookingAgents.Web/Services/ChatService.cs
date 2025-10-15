@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using System.Net.Http.Json;
 
 namespace TravelBookingAgents.Web.Services;
 
@@ -37,6 +38,14 @@ public class ChatService(IHttpClientFactory httpClientFactory)
             }
         }
     }
+
+    public async Task SubmitDecisionAsync(string workflowId, string action, string? note = null)
+    {
+        var client = httpClientFactory.CreateClient("api");
+        var payload = new { action, note };
+        using var response = await client.PostAsJsonAsync($"/agent/workflow/{workflowId}/decision", payload);
+        response.EnsureSuccessStatusCode();
+    }
 }
 
 public class AgentStatusUpdate
@@ -52,6 +61,16 @@ public class AgentStatusUpdate
 
     [JsonPropertyName("message")]
     public string? Message { get; set; }
+
+    // Added for step-based sequential workflow streaming
+    [JsonPropertyName("step")] public int? Step { get; set; }
+
+    // Per-step truncated summary emitted with status = "step_complete"
+    [JsonPropertyName("summary")] public string? Summary { get; set; }
+
+    // Approval-specific fields
+    [JsonPropertyName("workflowId")] public string? WorkflowId { get; set; }
+    [JsonPropertyName("actions")] public List<string>? Actions { get; set; }
 }
 
 public class AgentResponse

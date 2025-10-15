@@ -9,9 +9,11 @@
   <ItemGroup>
     <PackageReference Include="Aspire.OpenAI" Version="9.5.0-preview.1.25474.7" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.9" />
-    <PackageReference Include="Microsoft.Agents.AI.Workflows" Version="*-*" />
-    <PackageReference Include="Microsoft.Agents.AI" Version="*-*" />
-    <PackageReference Include="Microsoft.Agents.AI.Hosting" Version="*-*" />
+    <PackageReference Include="Microsoft.Agents.AI" Version="1.0.0-preview.251009.1" />
+    <PackageReference Include="Microsoft.Agents.AI.Workflows" Version="1.0.0-preview.251009.1" />
+    <PackageReference Include="Microsoft.Agents.AI.Hosting" Version="1.0.0-preview.251009.1" />
+    <PackageReference Include="Microsoft.Extensions.AI" Version="9.10.0" />
+    <PackageReference Include="OpenAI" Version="2.5.0" />
   </ItemGroup>
 
   <ItemGroup>
