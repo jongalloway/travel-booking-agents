@@ -1,0 +1,291 @@
+﻿@page "/"
+@page "/chat"
+@rendermode InteractiveServer
+@using TravelBookingAgents.Web.Services
+@inject ChatService ChatService
+
+<PageTitle>Corporate Travel Booking</PageTitle>
+
+<div class="chat-container">
+    <header>
+        <div class="header-content">
+            <h1>🌍 Corporate Travel Booking Agent</h1>
+            <p class="subtitle">AI-powered travel booking with automated approval workflow</p>
+        </div>
+    </header>
+    
+    <div class="info-panel">
+        <div class="info-card">
+            <strong>📋 Sample Requests:</strong>
+            <ul>
+                <li>"Book travel to Microsoft Build in Seattle, May 19-21, 2026"</li>
+                <li>"I need to visit the Austin office next month for 3 days"</li>
+                <li>"Conference trip to San Francisco, March 10-14"</li>
+            </ul>
+        </div>
+        <div class="info-card">
+            <strong>🤖 AI Agents:</strong>
+            <span class="badge">Travel Research</span>
+            <span class="badge">Policy Check</span>
+            <span class="badge">Budget Approval</span>
+            <span class="badge">Optimizer</span>
+            <span class="badge">Booking</span>
+        </div>
+    </div>
+    
+    <div class="chat-window">
+        @foreach (var msg in messages)
+        {
+            <div class="message @msg.Sender">
+                @((MarkupString)msg.Content)
+            </div>
+        }
+    </div>
+    <form @onsubmit="SendMessage" autocomplete="off" class="chat-form">
+        <input type="text" @bind="inputText" placeholder="Describe your travel needs (destination, dates, purpose)..." required />
+        <button type="submit" disabled="@isLoading">
+            @(isLoading ? "🔄 Processing..." : "✈️ Book Travel")
+        </button>
+    </form>
+</div>
+
+<style>
+    .chat-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+    
+    header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 12px 12px 0 0;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .header-content h1 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.8rem;
+    }
+    
+    .subtitle {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 0.95rem;
+    }
+    
+    .info-panel {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .info-card {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+    }
+    
+    .info-card ul {
+        margin: 0.5rem 0 0 0;
+        padding-left: 1.5rem;
+    }
+    
+    .info-card li {
+        margin: 0.3rem 0;
+        color: #495057;
+    }
+    
+    .badge {
+        display: inline-block;
+        background: #667eea;
+        color: white;
+        padding: 0.25rem 0.6rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        margin: 0.2rem;
+    }
+    
+    .chat-window {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-top: none;
+        min-height: 500px;
+        max-height: 600px;
+        overflow-y: auto;
+        padding: 1.5rem;
+    }
+    
+    .message {
+        margin: 1rem 0;
+        padding: 1rem;
+        border-radius: 8px;
+        max-width: 85%;
+    }
+    
+    .message.user {
+        background: #e3f2fd;
+        margin-left: auto;
+        text-align: right;
+    }
+    
+    .message.bot {
+        background: #f5f5f5;
+        border-left: 4px solid #667eea;
+    }
+    
+    .loading-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #667eea;
+    }
+    
+    .chat-form {
+        display: flex;
+        gap: 0.5rem;
+        padding: 1rem;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-top: none;
+        border-radius: 0 0 12px 12px;
+    }
+    
+    .chat-form input {
+        flex: 1;
+        padding: 0.75rem;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        font-size: 1rem;
+    }
+    
+    .chat-form button {
+        padding: 0.75rem 1.5rem;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: background 0.2s;
+    }
+    
+    .chat-form button:hover:not(:disabled) {
+        background: #5568d3;
+    }
+    
+    .chat-form button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    @@media (max-width: 768px) {
+        .info-panel {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+@code {
+    private string inputText = "";
+    private List<ChatMessage> messages = new();
+    private bool isLoading = false;
+
+    private class ChatMessage
+    {
+        public string Content { get; set; } = "";
+        public string Sender { get; set; } = "";
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(inputText) || isLoading)
+            return;
+
+        var userMsg = inputText.Trim();
+        messages.Add(new ChatMessage { Content = userMsg, Sender = "user" });
+        inputText = "";
+        isLoading = true;
+
+        // Add placeholder for status updates
+        var statusMessageIndex = messages.Count;
+        messages.Add(new ChatMessage { Content = "<div class='loading-indicator'><div class='spinner-border spinner-border-sm text-primary me-2' role='status'><span class='visually-hidden'>Loading...</span></div><span class='text-muted'>Initializing agents...</span></div>", Sender = "bot" });
+
+        try
+        {
+            await foreach (var update in ChatService.SendMessageStreamAsync(userMsg))
+            {
+                if (update.Status == "working" && !string.IsNullOrEmpty(update.Agent))
+                {
+                    // Show agent purpose or progress (Markdown rendered) in the status placeholder
+                    var purpose = string.IsNullOrWhiteSpace(update.Message) ? "agent is working..." : update.Message;
+                    var rendered = RenderMarkdown(purpose);
+                    messages[statusMessageIndex] = new ChatMessage 
+                    { 
+                        Content = $"<div class='loading-indicator'><div class='spinner-border spinner-border-sm text-primary me-2' role='status'><span class='visually-hidden'>Loading...</span></div><span class='text-muted'><strong>{update.Agent}</strong>: {rendered}</span></div>", 
+                        Sender = "bot" 
+                    };
+                    await InvokeAsync(StateHasChanged);
+                }
+                else if (update.Status == "complete" && update.Response != null)
+                {
+                    // Remove the status message
+                    messages.RemoveAt(statusMessageIndex);
+
+                    // Add the final response
+                    if (update.Response.Messages != null)
+                    {
+                        var textContent = "";
+                        foreach (var msg in update.Response.Messages)
+                        {
+                            foreach (var content in msg.Contents ?? new List<MessageContent>())
+                            {
+                                if (content.Type == "text")
+                                {
+                                    textContent = content.Text ?? "";
+                                }
+                            }
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(textContent))
+                        {
+                            messages.Add(new ChatMessage { Content = RenderMarkdown(textContent), Sender = "bot" });
+                        }
+                    }
+                    else if (!string.IsNullOrEmpty(update.Response.Result))
+                    {
+                        messages.Add(new ChatMessage { Content = RenderMarkdown(update.Response.Result), Sender = "bot" });
+                    }
+                    await InvokeAsync(StateHasChanged);
+                }
+                else if (update.Status == "error")
+                {
+                    messages.RemoveAt(statusMessageIndex);
+                    messages.Add(new ChatMessage { Content = $"Error: {update.Message}", Sender = "bot" });
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            if (messages.Count > statusMessageIndex)
+            {
+                messages.RemoveAt(statusMessageIndex);
+            }
+            messages.Add(new ChatMessage { Content = $"Error: {ex.Message}", Sender = "bot" });
+        }
+        finally
+        {
+            isLoading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private string RenderMarkdown(string text)
+    {
+        return Markdig.Markdown.ToHtml(text ?? "");
+    }
+}

@@ -1,0 +1,14 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/src/">
+    <Project Path="src/TravelBookingAgents.API/TravelBookingAgents.API.csproj" />
+    <Project Path="src/TravelBookingAgents.AppHost/TravelBookingAgents.AppHost.csproj" />
+    <Project Path="src/TravelBookingAgents.Console/TravelBookingAgents.Console.csproj" />
+    <Project Path="src/TravelBookingAgents.ServiceDefaults/TravelBookingAgents.ServiceDefaults.csproj" />
+    <Project Path="src/TravelBookingAgents.Web/TravelBookingAgents.Web.csproj" />
+  </Folder>
+</Solution>

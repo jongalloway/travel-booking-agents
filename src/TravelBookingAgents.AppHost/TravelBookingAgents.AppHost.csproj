@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Sdk Name="Aspire.AppHost.Sdk" Version="9.5.0" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>74de35ab-530e-496b-8aef-84f5bffe1023</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.5.0" />
+    <PackageReference Include="Aspire.Hosting.GitHub.Models" Version="9.5.0-preview.1.25474.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TravelBookingAgents.API\TravelBookingAgents.API.csproj" />
+    <ProjectReference Include="..\TravelBookingAgents.Web\TravelBookingAgents.Web.csproj" />
+  </ItemGroup>  
+
+</Project>
