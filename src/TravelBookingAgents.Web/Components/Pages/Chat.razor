@@ -40,6 +40,26 @@
                 @((MarkupString)msg.Content)
             </div>
         }
+        @if (awaitingApproval)
+        {
+            <div class="message bot" style="border-left-color:#d39e00;background:#fff9e6;">
+                <strong>⏸ Human Approval Required</strong><br />
+                <small>Workflow ID: @pendingWorkflowId</small>
+                <div style="margin-top:0.5rem;">
+                    <textarea placeholder="Optional note" @bind=approvalNote style="width:100%;min-height:60px;"></textarea>
+                </div>
+                <div style="margin-top:0.5rem;display:flex;gap:.5rem;flex-wrap:wrap;">
+                    @foreach (var act in pendingActions)
+                    {
+                        <button class="btn-approval" disabled="@decisionSubmitting" @onclick="() => SendDecision(act)">@((act.Equals("approve", StringComparison.OrdinalIgnoreCase)?"✅ Approve": act.Equals("cancel", StringComparison.OrdinalIgnoreCase)?"🛑 Cancel": act))</button>
+                    }
+                </div>
+                @if (decisionSubmitting)
+                {
+                    <div style="margin-top:.5rem;color:#6c757d;">Submitting decision...</div>
+                }
+            </div>
+        }
     </div>
     <form @onsubmit="SendMessage" autocomplete="off" class="chat-form">
         <input type="text" @bind="inputText" placeholder="Describe your travel needs (destination, dates, purpose)..." required />
@@ -193,6 +213,11 @@
     private string inputText = "";
     private List<ChatMessage> messages = new();
     private bool isLoading = false;
+    private bool awaitingApproval = false;
+    private string? pendingWorkflowId;
+    private List<string> pendingActions = new();
+    private string? approvalNote;
+    private bool decisionSubmitting = false;
 
     private class ChatMessage
     {
@@ -228,6 +253,37 @@
                         Content = $"<div class='loading-indicator'><div class='spinner-border spinner-border-sm text-primary me-2' role='status'><span class='visually-hidden'>Loading...</span></div><span class='text-muted'><strong>{update.Agent}</strong>: {rendered}</span></div>", 
                         Sender = "bot" 
                     };
+                    await InvokeAsync(StateHasChanged);
+                }
+                else if (update.Status == "awaiting_input")
+                {
+                    awaitingApproval = true;
+                    pendingWorkflowId = update.WorkflowId;
+                    pendingActions = update.Actions ?? new List<string> { "approve", "cancel" };
+                    messages.Add(new ChatMessage { Content = RenderMarkdown($"**System:** Awaiting human decision after policy evaluation."), Sender = "bot" });
+                    await InvokeAsync(StateHasChanged);
+                }
+                else if (update.Status == "resumed")
+                {
+                    awaitingApproval = false;
+                    decisionSubmitting = false;
+                    messages.Add(new ChatMessage { Content = RenderMarkdown("**System:** Workflow resumed after approval."), Sender = "bot" });
+                    await InvokeAsync(StateHasChanged);
+                }
+                else if (update.Status == "cancelled")
+                {
+                    awaitingApproval = false;
+                    decisionSubmitting = false;
+                    messages.Add(new ChatMessage { Content = RenderMarkdown("**System:** Workflow cancelled by user."), Sender = "bot" });
+                    await InvokeAsync(StateHasChanged);
+                }
+                else if (update.Status == "step_complete")
+                {
+                    // Append a chronological step summary (independent of the live status placeholder)
+                    var summary = update.Summary ?? update.Message ?? "(no summary)";
+                    var stepLabel = update.Step.HasValue ? $"Step {update.Step.Value}" : "Step";
+                    var md = $"**{stepLabel} - {update.Agent}:** {summary}";
+                    messages.Add(new ChatMessage { Content = RenderMarkdown(md), Sender = "bot" });
                     await InvokeAsync(StateHasChanged);
                 }
                 else if (update.Status == "complete" && update.Response != null)
@@ -287,5 +343,23 @@
     private string RenderMarkdown(string text)
     {
         return Markdig.Markdown.ToHtml(text ?? "");
+    }
+
+    private async Task SendDecision(string action)
+    {
+        if (pendingWorkflowId == null) return;
+        decisionSubmitting = true;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            await ChatService.SubmitDecisionAsync(pendingWorkflowId, action, approvalNote);
+            messages.Add(new ChatMessage { Content = RenderMarkdown($"**You ({action})** {approvalNote}"), Sender = "user" });
+        }
+        catch (Exception ex)
+        {
+            messages.Add(new ChatMessage { Content = RenderMarkdown($"**Error submitting decision:** {ex.Message}"), Sender = "bot" });
+            decisionSubmitting = false;
+        }
+        await InvokeAsync(StateHasChanged);
     }
 }
